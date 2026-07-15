@@ -33,17 +33,113 @@ jobs:
           python -m pip install pyinstaller
           python -m pip install -r requirements.txt
 
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fuse libfuse2 wget
+
       - name: Build Basic
         run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name IPTV-URL-Extractor-Basic iptv_url_extractor_basic.py
 
       - name: Build Pro
         run: python -m PyInstaller --noconfirm --clean --onefile --windowed --collect-all customtkinter --name IPTV-URL-Extractor-Pro iptv_url_extractor_pro.py
 
+      - name: Build Linux packages
+        if: runner.os == 'Linux'
+        run: |
+          set -e
+          mkdir -p packages
+          case "$GITHUB_REF_NAME" in
+            v*) VERSION="${GITHUB_REF_NAME#v}" ;;
+            *) VERSION="0.0.0-${GITHUB_RUN_NUMBER}" ;;
+          esac
+
+          tar -czf packages/IPTV-URL-Extractor-linux-x86_64.tar.gz -C dist IPTV-URL-Extractor-Basic IPTV-URL-Extractor-Pro
+
+          mkdir -p package/DEBIAN package/usr/bin package/usr/share/applications
+          cp dist/IPTV-URL-Extractor-Basic package/usr/bin/iptv-url-extractor-basic
+          cp dist/IPTV-URL-Extractor-Pro package/usr/bin/iptv-url-extractor-pro
+          chmod +x package/usr/bin/iptv-url-extractor-basic package/usr/bin/iptv-url-extractor-pro
+
+          cat > package/DEBIAN/control <<EOF
+          Package: iptv-url-extractor
+          Version: ${VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Danijel
+          Description: IPTV URL Extractor Basic and Pro desktop tools
+          EOF
+          sed -i 's/^          //' package/DEBIAN/control
+
+          cat > package/usr/share/applications/iptv-url-extractor-basic.desktop <<EOF
+          [Desktop Entry]
+          Name=IPTV URL Extractor Basic
+          Exec=iptv-url-extractor-basic
+          Terminal=false
+          Type=Application
+          Categories=Utility;Network;
+          EOF
+          sed -i 's/^          //' package/usr/share/applications/iptv-url-extractor-basic.desktop
+
+          cat > package/usr/share/applications/iptv-url-extractor-pro.desktop <<EOF
+          [Desktop Entry]
+          Name=IPTV URL Extractor Pro
+          Exec=iptv-url-extractor-pro
+          Terminal=false
+          Type=Application
+          Categories=Utility;Network;
+          EOF
+          sed -i 's/^          //' package/usr/share/applications/iptv-url-extractor-pro.desktop
+
+          dpkg-deb --build package packages/iptv-url-extractor_${VERSION}_amd64.deb
+
+      - name: Build Linux AppImage
+        if: runner.os == 'Linux'
+        continue-on-error: true
+        run: |
+          set -e
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps packages
+          cp dist/IPTV-URL-Extractor-Pro AppDir/usr/bin/iptv-url-extractor-pro
+          chmod +x AppDir/usr/bin/iptv-url-extractor-pro
+
+          cat > AppDir/AppRun <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/bin/iptv-url-extractor-pro" "$@"
+          EOF
+          sed -i 's/^          //' AppDir/AppRun
+          chmod +x AppDir/AppRun
+
+          cat > AppDir/iptv-url-extractor-pro.desktop <<'EOF'
+          [Desktop Entry]
+          Name=IPTV URL Extractor Pro
+          Exec=iptv-url-extractor-pro
+          Icon=iptv-url-extractor-pro
+          Terminal=false
+          Type=Application
+          Categories=Utility;Network;
+          EOF
+          sed -i 's/^          //' AppDir/iptv-url-extractor-pro.desktop
+
+          cat > AppDir/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg <<'EOF'
+          <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="48" fill="#0f766e"/><path fill="#fff" d="M56 76h144v104H56z"/><path fill="#0f766e" d="M80 104h96v16H80zm0 32h64v16H80z"/></svg>
+          EOF
+          sed -i 's/^          //' AppDir/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg
+          cp AppDir/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg AppDir/iptv-url-extractor-pro.svg
+
+          wget -O appimagetool.AppImage https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool.AppImage
+          APPIMAGE_EXTRACT_AND_RUN=1 ARCH=x86_64 ./appimagetool.AppImage AppDir packages/IPTV-URL-Extractor-Pro-x86_64.AppImage
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: IPTV-URL-Extractor-${{ runner.os }}
-          path: dist/*
+          path: |
+            dist/*
+            packages/*
 
   release:
     name: Publish GitHub release
