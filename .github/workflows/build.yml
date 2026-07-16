@@ -39,9 +39,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y fuse libfuse2 wget
 
-      - name: Build Basic
-        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name IPTV-URL-Extractor-Basic iptv_url_extractor_basic.py
-
       - name: Build Pro
         run: python -m PyInstaller --noconfirm --clean --onefile --windowed --collect-all customtkinter --name IPTV-URL-Extractor-Pro iptv_url_extractor_pro.py
 
@@ -55,12 +52,11 @@ jobs:
             *) VERSION="0.0.0-${GITHUB_RUN_NUMBER}" ;;
           esac
 
-          tar -czf packages/IPTV-URL-Extractor-linux-x86_64.tar.gz -C dist IPTV-URL-Extractor-Basic IPTV-URL-Extractor-Pro
+          tar -czf packages/IPTV-URL-Extractor-Pro-linux-x86_64.tar.gz -C dist IPTV-URL-Extractor-Pro
 
           mkdir -p package/DEBIAN package/usr/bin package/usr/share/applications
-          cp dist/IPTV-URL-Extractor-Basic package/usr/bin/iptv-url-extractor-basic
           cp dist/IPTV-URL-Extractor-Pro package/usr/bin/iptv-url-extractor-pro
-          chmod +x package/usr/bin/iptv-url-extractor-basic package/usr/bin/iptv-url-extractor-pro
+          chmod +x package/usr/bin/iptv-url-extractor-pro
 
           cat > package/DEBIAN/control <<EOF
           Package: iptv-url-extractor
@@ -69,19 +65,9 @@ jobs:
           Priority: optional
           Architecture: amd64
           Maintainer: Danijel
-          Description: IPTV URL Extractor Basic and Pro desktop tools
+          Description: IPTV URL Extractor Pro desktop tool
           EOF
           sed -i 's/^          //' package/DEBIAN/control
-
-          cat > package/usr/share/applications/iptv-url-extractor-basic.desktop <<EOF
-          [Desktop Entry]
-          Name=IPTV URL Extractor Basic
-          Exec=iptv-url-extractor-basic
-          Terminal=false
-          Type=Application
-          Categories=Utility;Network;
-          EOF
-          sed -i 's/^          //' package/usr/share/applications/iptv-url-extractor-basic.desktop
 
           cat > package/usr/share/applications/iptv-url-extractor-pro.desktop <<EOF
           [Desktop Entry]
