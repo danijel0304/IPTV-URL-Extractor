@@ -7,6 +7,12 @@
 Desktop application for finding IPTV playlist URLs (`.m3u` and `.m3u8`) in
 text, local files, and web content.
 
+## Screenshot
+
+### Main window
+
+![Main window](docs/screenshots/main-window.png)
+
 ### Features
 
 - opens local text files
