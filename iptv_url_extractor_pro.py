@@ -5,7 +5,15 @@ from urllib.parse import urlparse, parse_qs, unquote
 import requests
 import threading
 import concurrent.futures
+import webbrowser
 from collections import Counter
+
+APP_NAME = "IPTV URL Extractor Pro"
+APP_VERSION = "1.0.3"
+GITHUB_REPO = "danijel0304/IPTV-URL-Extractor"
+GITHUB_RELEASES_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+GITHUB_RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases/latest"
+PAYPAL_DONATE_URL = "https://www.paypal.com/paypalme/danijel0304"
 
 # --- OSNOVNA LOGIKA ---
 URL_REGEX = re.compile(r"(?i)\b((?:https?://|www\.)[^\s<>\"\]\)]+)")
@@ -45,19 +53,53 @@ class IptvExtractorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("IPTV URL Extractor Pro (Deep Check Edition)")
+        self.title(f"{APP_NAME} v{APP_VERSION} (Deep Check Edition)")
         self.geometry("1250x800")
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("blue")
 
-        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
         self.extracted_urls = []
+        self.update_check_running = False
+
+        # --- 0. STALNA TRAKA PROGRAMA ---
+        self.frame_app = ctk.CTkFrame(self, fg_color="transparent")
+        self.frame_app.grid(row=0, column=0, sticky="ew", padx=20, pady=(16, 4))
+        self.frame_app.grid_columnconfigure(0, weight=1)
+
+        self.lbl_version = ctk.CTkLabel(
+            self.frame_app,
+            text=f"{APP_NAME} v{APP_VERSION}",
+            font=("Arial", 18, "bold"),
+            anchor="w",
+        )
+        self.lbl_version.grid(row=0, column=0, sticky="w")
+
+        self.btn_update = ctk.CTkButton(
+            self.frame_app,
+            text="Update",
+            command=self.check_for_updates,
+            width=110,
+            fg_color="#334155",
+            hover_color="#1f2937",
+        )
+        self.btn_update.grid(row=0, column=1, sticky="e", padx=(10, 8))
+
+        self.btn_donate = ctk.CTkButton(
+            self.frame_app,
+            text="PayPal donacija",
+            command=self.open_donate,
+            width=140,
+            fg_color="#003087",
+            hover_color="#0070ba",
+        )
+        self.btn_donate.grid(row=0, column=2, sticky="e")
 
         # --- 1. GORNJA TRAKA (Web Scraping & Učitavanje) ---
         self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
-        self.frame_top.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 5))
+        self.frame_top.grid(row=1, column=0, sticky="ew", padx=20, pady=(8, 5))
 
         ctk.CTkButton(self.frame_top, text="📂 Otvori datoteku", command=self.open_file, width=140).pack(side="left", padx=(0, 10))
 
@@ -67,7 +109,7 @@ class IptvExtractorApp(ctk.CTk):
 
         # --- 2. TRAKA S AKCIJAMA ---
         self.frame_actions = ctk.CTkFrame(self, fg_color="transparent")
-        self.frame_actions.grid(row=1, column=0, sticky="ew", padx=20, pady=5)
+        self.frame_actions.grid(row=2, column=0, sticky="ew", padx=20, pady=5)
 
         ctk.CTkButton(self.frame_actions, text="⚡ 1. Izvuci URL-ove", command=self.run_extract, width=140, fg_color="#2FA572", hover_color="#107C41").pack(side="left", padx=(0, 10))
 
@@ -83,7 +125,7 @@ class IptvExtractorApp(ctk.CTk):
 
         # --- 3. FILTERI I OPCIJE ---
         self.frame_options = ctk.CTkFrame(self)
-        self.frame_options.grid(row=2, column=0, sticky="ew", padx=20, pady=10)
+        self.frame_options.grid(row=3, column=0, sticky="ew", padx=20, pady=10)
 
         self.var_m3u8 = ctk.BooleanVar(value=True)
         self.var_dedupe = ctk.BooleanVar(value=True)
@@ -101,7 +143,7 @@ class IptvExtractorApp(ctk.CTk):
 
         # --- 4. GLAVNI DIO (Tekst okviri) ---
         self.frame_main = ctk.CTkFrame(self, fg_color="transparent")
-        self.frame_main.grid(row=3, column=0, sticky="nsew", padx=20, pady=10)
+        self.frame_main.grid(row=4, column=0, sticky="nsew", padx=20, pady=10)
         self.frame_main.grid_columnconfigure(0, weight=1)
         self.frame_main.grid_columnconfigure(1, weight=1)
         self.frame_main.grid_rowconfigure(1, weight=1)
@@ -120,7 +162,7 @@ class IptvExtractorApp(ctk.CTk):
 
         # --- 5. STATUS BAR & PROGRESS BAR ---
         self.frame_status = ctk.CTkFrame(self, fg_color="transparent")
-        self.frame_status.grid(row=4, column=0, sticky="ew", padx=20, pady=(0, 10))
+        self.frame_status.grid(row=5, column=0, sticky="ew", padx=20, pady=(0, 10))
         self.frame_status.grid_columnconfigure(0, weight=1)
 
         self.status = ctk.StringVar(value="Spreman.")
@@ -137,6 +179,68 @@ class IptvExtractorApp(ctk.CTk):
     def update_status(self, msg):
         self.status.set(msg)
         self.update_idletasks()
+
+    def open_donate(self):
+        webbrowser.open(PAYPAL_DONATE_URL, new=2)
+
+    def version_tuple(self, value):
+        parts = [int(part) for part in re.findall(r"\d+", str(value).lstrip("v"))[:3]]
+        while len(parts) < 3:
+            parts.append(0)
+        return tuple(parts)
+
+    def is_newer_version(self, latest, current):
+        return self.version_tuple(latest) > self.version_tuple(current)
+
+    def check_for_updates(self):
+        if self.update_check_running:
+            messagebox.showinfo("Update", "Provjera updatea je već pokrenuta.")
+            return
+        self.update_check_running = True
+        self.btn_update.configure(state="disabled")
+        self.update_status("Provjeravam GitHub release...")
+        threading.Thread(target=self._check_updates_thread, daemon=True).start()
+
+    def _check_updates_thread(self):
+        release = None
+        error = None
+        try:
+            response = requests.get(
+                GITHUB_RELEASES_API,
+                headers={"Accept": "application/vnd.github+json", "User-Agent": f"IPTV-URL-Extractor/{APP_VERSION}"},
+                timeout=8,
+            )
+            response.raise_for_status()
+            data = response.json()
+            if not data.get("draft") and not data.get("prerelease"):
+                release = {
+                    "tag": str(data.get("tag_name", "")).strip(),
+                    "url": data.get("html_url") or GITHUB_RELEASES_URL,
+                }
+        except Exception as exc:  # noqa: BLE001 - GUI shows a friendly update error.
+            error = exc
+        self.after(0, self._handle_update_result, release, error)
+
+    def _handle_update_result(self, release, error):
+        self.update_check_running = False
+        self.btn_update.configure(state="normal")
+        if error or not release or not release.get("tag"):
+            self.update_status("Provjera updatea nije uspjela.")
+            messagebox.showwarning("Update", "Nisam uspio provjeriti novu verziju. Provjerite internet vezu i pokušajte ponovno.")
+            return
+
+        latest = release["tag"]
+        if not self.is_newer_version(latest, APP_VERSION):
+            self.update_status(f"Program je ažuran ({APP_VERSION}).")
+            messagebox.showinfo("Update", f"Koristite najnoviju verziju programa ({APP_VERSION}).")
+            return
+
+        self.update_status(f"Dostupna je nova verzija: {latest}")
+        if messagebox.askyesno(
+            "Dostupna je nova verzija",
+            f"Trenutna verzija: {APP_VERSION}\nNova verzija: {latest}\n\nOtvoriti stranicu za preuzimanje?",
+        ):
+            webbrowser.open(release["url"], new=2)
 
     def update_progress_ui(self, current, total, msg):
         """Sigurno ažuriranje GUI-ja iz pozadinske dretve."""
