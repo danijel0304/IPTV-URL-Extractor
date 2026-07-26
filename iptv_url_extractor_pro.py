@@ -8,8 +8,10 @@ import concurrent.futures
 import webbrowser
 from collections import Counter
 
+from self_updater import SelfUpdater
+
 APP_NAME = "IPTV URL Extractor Pro"
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.0.4"
 GITHUB_REPO = "danijel0304/IPTV-URL-Extractor"
 GITHUB_RELEASES_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 GITHUB_RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases/latest"
@@ -193,54 +195,17 @@ class IptvExtractorApp(ctk.CTk):
         return self.version_tuple(latest) > self.version_tuple(current)
 
     def check_for_updates(self):
-        if self.update_check_running:
-            messagebox.showinfo("Update", "Provjera updatea je već pokrenuta.")
-            return
-        self.update_check_running = True
-        self.btn_update.configure(state="disabled")
-        self.update_status("Provjeravam GitHub release...")
-        threading.Thread(target=self._check_updates_thread, daemon=True).start()
-
-    def _check_updates_thread(self):
-        release = None
-        error = None
-        try:
-            response = requests.get(
-                GITHUB_RELEASES_API,
-                headers={"Accept": "application/vnd.github+json", "User-Agent": f"IPTV-URL-Extractor/{APP_VERSION}"},
-                timeout=8,
-            )
-            response.raise_for_status()
-            data = response.json()
-            if not data.get("draft") and not data.get("prerelease"):
-                release = {
-                    "tag": str(data.get("tag_name", "")).strip(),
-                    "url": data.get("html_url") or GITHUB_RELEASES_URL,
-                }
-        except Exception as exc:  # noqa: BLE001 - GUI shows a friendly update error.
-            error = exc
-        self.after(0, self._handle_update_result, release, error)
-
-    def _handle_update_result(self, release, error):
-        self.update_check_running = False
-        self.btn_update.configure(state="normal")
-        if error or not release or not release.get("tag"):
-            self.update_status("Provjera updatea nije uspjela.")
-            messagebox.showwarning("Update", "Nisam uspio provjeriti novu verziju. Provjerite internet vezu i pokušajte ponovno.")
-            return
-
-        latest = release["tag"]
-        if not self.is_newer_version(latest, APP_VERSION):
-            self.update_status(f"Program je ažuran ({APP_VERSION}).")
-            messagebox.showinfo("Update", f"Koristite najnoviju verziju programa ({APP_VERSION}).")
-            return
-
-        self.update_status(f"Dostupna je nova verzija: {latest}")
-        if messagebox.askyesno(
-            "Dostupna je nova verzija",
-            f"Trenutna verzija: {APP_VERSION}\nNova verzija: {latest}\n\nOtvoriti stranicu za preuzimanje?",
-        ):
-            webbrowser.open(release["url"], new=2)
+        SelfUpdater(
+            self,
+            APP_NAME,
+            APP_VERSION,
+            GITHUB_REPO,
+            binary_names=("IPTV-URL-Extractor-Pro.exe", "IPTV-URL-Extractor-Pro", "iptv-url-extractor-pro"),
+            linux_command="iptv-url-extractor-pro",
+            status_callback=self.update_status,
+            button_getter=lambda: self.btn_update,
+            language_getter=lambda: "hr",
+        ).check()
 
     def update_progress_ui(self, current, total, msg):
         """Sigurno ažuriranje GUI-ja iz pozadinske dretve."""
