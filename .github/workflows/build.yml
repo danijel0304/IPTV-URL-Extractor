@@ -40,7 +40,7 @@ jobs:
           sudo apt-get install -y fuse libfuse2 wget
 
       - name: Build Pro
-        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --collect-all customtkinter --name IPTV-URL-Extractor-Pro iptv_url_extractor_pro.py
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --icon assets/iptv-url-extractor.ico --collect-all customtkinter --name IPTV-URL-Extractor-Pro iptv_url_extractor_pro.py
 
       - name: Build Linux packages
         if: runner.os == 'Linux'
@@ -54,8 +54,9 @@ jobs:
 
           tar -czf packages/IPTV-URL-Extractor-Pro-linux-x86_64.tar.gz -C dist IPTV-URL-Extractor-Pro
 
-          mkdir -p package/DEBIAN package/usr/bin package/usr/share/applications
+          mkdir -p package/DEBIAN package/usr/bin package/usr/share/applications package/usr/share/icons/hicolor/scalable/apps
           cp dist/IPTV-URL-Extractor-Pro package/usr/bin/iptv-url-extractor-pro
+          cp assets/iptv-url-extractor.svg package/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg
           chmod +x package/usr/bin/iptv-url-extractor-pro
 
           cat > package/DEBIAN/control <<EOF
@@ -75,6 +76,7 @@ jobs:
           Exec=iptv-url-extractor-pro
           Terminal=false
           Type=Application
+          Icon=iptv-url-extractor-pro
           Categories=Utility;Network;
           EOF
           sed -i 's/^          //' package/usr/share/applications/iptv-url-extractor-pro.desktop
@@ -98,6 +100,9 @@ jobs:
           sed -i 's/^          //' AppDir/AppRun
           chmod +x AppDir/AppRun
 
+          cp assets/iptv-url-extractor.svg AppDir/iptv-url-extractor-pro.svg
+          cp assets/iptv-url-extractor.svg AppDir/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg
+
           cat > AppDir/iptv-url-extractor-pro.desktop <<'EOF'
           [Desktop Entry]
           Name=IPTV URL Extractor Pro
@@ -108,12 +113,6 @@ jobs:
           Categories=Utility;Network;
           EOF
           sed -i 's/^          //' AppDir/iptv-url-extractor-pro.desktop
-
-          cat > AppDir/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg <<'EOF'
-          <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="48" fill="#0f766e"/><path fill="#fff" d="M56 76h144v104H56z"/><path fill="#0f766e" d="M80 104h96v16H80zm0 32h64v16H80z"/></svg>
-          EOF
-          sed -i 's/^          //' AppDir/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg
-          cp AppDir/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg AppDir/iptv-url-extractor-pro.svg
 
           wget -O appimagetool.AppImage https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool.AppImage
