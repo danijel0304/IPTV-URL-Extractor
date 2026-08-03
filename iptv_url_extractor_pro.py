@@ -11,7 +11,7 @@ from collections import Counter
 from self_updater import SelfUpdater
 
 APP_NAME = "IPTV URL Extractor Pro"
-APP_VERSION = "1.0.4"
+APP_VERSION = "1.0.6"
 GITHUB_REPO = "danijel0304/IPTV-URL-Extractor"
 GITHUB_RELEASES_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 GITHUB_RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases/latest"
@@ -176,6 +176,7 @@ class IptvExtractorApp(ctk.CTk):
         self.progress_bar.grid(row=0, column=1, sticky="e")
         self.progress_bar.set(0)
         self.progress_bar.grid_remove() # Skrivamo ga na početku
+        self.after(1200, lambda: self.check_for_updates(silent=True))
 
     # --- FUNKCIJE ZASLONA ---
     def update_status(self, msg):
@@ -194,7 +195,7 @@ class IptvExtractorApp(ctk.CTk):
     def is_newer_version(self, latest, current):
         return self.version_tuple(latest) > self.version_tuple(current)
 
-    def check_for_updates(self):
+    def check_for_updates(self, *, silent=False):
         SelfUpdater(
             self,
             APP_NAME,
@@ -205,7 +206,7 @@ class IptvExtractorApp(ctk.CTk):
             status_callback=self.update_status,
             button_getter=lambda: self.btn_update,
             language_getter=lambda: "hr",
-        ).check()
+        ).check(show_current=not silent, show_errors=not silent)
 
     def update_progress_ui(self, current, total, msg):
         """Sigurno ažuriranje GUI-ja iz pozadinske dretve."""
