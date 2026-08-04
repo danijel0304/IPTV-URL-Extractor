@@ -54,9 +54,9 @@ jobs:
 
           tar -czf packages/IPTV-URL-Extractor-Pro-linux-x86_64.tar.gz -C dist IPTV-URL-Extractor-Pro
 
-          mkdir -p package/DEBIAN package/usr/bin package/usr/share/applications package/usr/share/icons/hicolor/scalable/apps
+          mkdir -p package/DEBIAN package/usr/bin package/usr/share/applications package/usr/share/icons/hicolor/512x512/apps
           cp dist/IPTV-URL-Extractor-Pro package/usr/bin/iptv-url-extractor-pro
-          cp assets/iptv-url-extractor.svg package/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg
+          cp assets/iptv-url-extractor.png package/usr/share/icons/hicolor/512x512/apps/iptv-url-extractor-pro.png
           chmod +x package/usr/bin/iptv-url-extractor-pro
 
           cat > package/DEBIAN/control <<EOF
@@ -88,7 +88,7 @@ jobs:
         continue-on-error: true
         run: |
           set -e
-          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps packages
+          mkdir -p AppDir/usr/bin AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/512x512/apps packages
           cp dist/IPTV-URL-Extractor-Pro AppDir/usr/bin/iptv-url-extractor-pro
           chmod +x AppDir/usr/bin/iptv-url-extractor-pro
 
@@ -100,8 +100,8 @@ jobs:
           sed -i 's/^          //' AppDir/AppRun
           chmod +x AppDir/AppRun
 
-          cp assets/iptv-url-extractor.svg AppDir/iptv-url-extractor-pro.svg
-          cp assets/iptv-url-extractor.svg AppDir/usr/share/icons/hicolor/scalable/apps/iptv-url-extractor-pro.svg
+          cp assets/iptv-url-extractor.png AppDir/iptv-url-extractor-pro.png
+          cp assets/iptv-url-extractor.png AppDir/usr/share/icons/hicolor/512x512/apps/iptv-url-extractor-pro.png
 
           cat > AppDir/iptv-url-extractor-pro.desktop <<'EOF'
           [Desktop Entry]

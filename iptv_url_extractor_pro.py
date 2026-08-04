@@ -11,7 +11,7 @@ from collections import Counter
 from self_updater import SelfUpdater
 
 APP_NAME = "IPTV URL Extractor Pro"
-APP_VERSION = "1.0.6"
+APP_VERSION = "1.0.7"
 GITHUB_REPO = "danijel0304/IPTV-URL-Extractor"
 GITHUB_RELEASES_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 GITHUB_RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases/latest"
