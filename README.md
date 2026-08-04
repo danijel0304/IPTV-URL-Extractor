@@ -80,14 +80,14 @@ Windows build:
 
 ```bat
 py -3 -m pip install pyinstaller -r requirements.txt
-py -3 -m PyInstaller --noconfirm --onefile --windowed --icon assets/iptv-url-extractor.ico --name IPTV-URL-Extractor-Pro --collect-all customtkinter iptv_url_extractor_pro.py
+py -3 -m PyInstaller --noconfirm --onefile --windowed --icon assets/iptv-url-extractor.ico --add-data "assets;assets" --name IPTV-URL-Extractor-Pro --collect-all customtkinter iptv_url_extractor_pro.py
 ```
 
 Linux build:
 
 ```bash
 python3 -m pip install pyinstaller -r requirements.txt
-python3 -m PyInstaller --noconfirm --onefile --windowed --icon assets/iptv-url-extractor.ico --name IPTV-URL-Extractor-Pro --collect-all customtkinter iptv_url_extractor_pro.py
+python3 -m PyInstaller --noconfirm --onefile --windowed --icon assets/iptv-url-extractor.ico --add-data "assets:assets" --name IPTV-URL-Extractor-Pro --collect-all customtkinter iptv_url_extractor_pro.py
 ```
 
 The output will be created in the `dist/` folder.
@@ -169,14 +169,14 @@ Windows build:
 
 ```bat
 py -3 -m pip install pyinstaller -r requirements.txt
-py -3 -m PyInstaller --noconfirm --onefile --windowed --icon assets/iptv-url-extractor.ico --name IPTV-URL-Extractor-Pro --collect-all customtkinter iptv_url_extractor_pro.py
+py -3 -m PyInstaller --noconfirm --onefile --windowed --icon assets/iptv-url-extractor.ico --add-data "assets;assets" --name IPTV-URL-Extractor-Pro --collect-all customtkinter iptv_url_extractor_pro.py
 ```
 
 Linux build:
 
 ```bash
 python3 -m pip install pyinstaller -r requirements.txt
-python3 -m PyInstaller --noconfirm --onefile --windowed --icon assets/iptv-url-extractor.ico --name IPTV-URL-Extractor-Pro --collect-all customtkinter iptv_url_extractor_pro.py
+python3 -m PyInstaller --noconfirm --onefile --windowed --icon assets/iptv-url-extractor.ico --add-data "assets:assets" --name IPTV-URL-Extractor-Pro --collect-all customtkinter iptv_url_extractor_pro.py
 ```
 
 Rezultat se nalazi u mapi `dist/`.

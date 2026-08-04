@@ -1,6 +1,9 @@
 import customtkinter as ctk
+import tkinter as tk
 from tkinter import filedialog, messagebox
 import re
+import os
+from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
 import requests
 import threading
@@ -16,6 +19,40 @@ GITHUB_REPO = "danijel0304/IPTV-URL-Extractor"
 GITHUB_RELEASES_API = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 GITHUB_RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases/latest"
 PAYPAL_DONATE_URL = "https://www.paypal.com/paypalme/danijel0304"
+
+
+def set_window_icon(window: ctk.CTk) -> None:
+    assets_dir = Path(__file__).resolve().parent / "assets"
+    try:
+        icon_image = tk.PhotoImage(file=str(assets_dir / "iptv-url-extractor.png"))
+        window.iconphoto(True, icon_image)
+        window._window_icon_image = icon_image
+    except tk.TclError:
+        pass
+    if os.name == "nt":
+        try:
+            window.iconbitmap(default=str(assets_dir / "iptv-url-extractor.ico"))
+        except tk.TclError:
+            pass
+
+
+class StartupSplash(tk.Tk):
+    def __init__(self) -> None:
+        super().__init__()
+        self.configure(bg="#101827")
+        self.overrideredirect(True)
+        set_window_icon(self)
+        card = tk.Frame(self, bg="#162033", highlightbackground="#31415b", highlightthickness=1)
+        card.pack(fill=tk.BOTH, expand=True)
+        image = tk.PhotoImage(file=str(Path(__file__).resolve().parent / "assets" / "iptv-url-extractor.png"))
+        self._image = image.subsample(2, 2)
+        tk.Label(card, image=self._image, bg="#162033").pack(padx=28, pady=(24, 8))
+        tk.Label(card, text=APP_NAME, bg="#162033", fg="#f8fafc", font=("Segoe UI", 18, "bold")).pack()
+        tk.Label(card, text="Pokrećem aplikaciju…", bg="#162033", fg="#b5c3d7", font=("Segoe UI", 10)).pack(pady=(6, 22))
+        self.update_idletasks()
+        width, height = self.winfo_reqwidth(), self.winfo_reqheight()
+        self.geometry(f"{width}x{height}+{(self.winfo_screenwidth() - width) // 2}+{(self.winfo_screenheight() - height) // 2}")
+        self.after(3000, self.destroy)
 
 # --- OSNOVNA LOGIKA ---
 URL_REGEX = re.compile(r"(?i)\b((?:https?://|www\.)[^\s<>\"\]\)]+)")
@@ -56,8 +93,9 @@ class IptvExtractorApp(ctk.CTk):
         super().__init__()
 
         self.title(f"{APP_NAME} v{APP_VERSION} (Deep Check Edition)")
+        set_window_icon(self)
         self.geometry("1250x800")
-        ctk.set_appearance_mode("System")
+        ctk.set_appearance_mode("Dark")
         ctk.set_default_color_theme("blue")
 
         self.grid_rowconfigure(4, weight=1)
@@ -89,6 +127,16 @@ class IptvExtractorApp(ctk.CTk):
         )
         self.btn_update.grid(row=0, column=1, sticky="e", padx=(10, 8))
 
+        self.theme_button = ctk.CTkButton(
+            self.frame_app,
+            text="Svijetla tema",
+            command=self.toggle_theme,
+            width=130,
+            fg_color="#334155",
+            hover_color="#1f2937",
+        )
+        self.theme_button.grid(row=0, column=2, sticky="e", padx=(0, 8))
+
         self.btn_donate = ctk.CTkButton(
             self.frame_app,
             text="PayPal donacija",
@@ -97,7 +145,7 @@ class IptvExtractorApp(ctk.CTk):
             fg_color="#003087",
             hover_color="#0070ba",
         )
-        self.btn_donate.grid(row=0, column=2, sticky="e")
+        self.btn_donate.grid(row=0, column=3, sticky="e")
 
         # --- 1. GORNJA TRAKA (Web Scraping & Učitavanje) ---
         self.frame_top = ctk.CTkFrame(self, fg_color="transparent")
@@ -390,6 +438,13 @@ class IptvExtractorApp(ctk.CTk):
         self.extracted_urls = []
         self.update_status("🗑️ Očišćeno.")
 
+    def toggle_theme(self):
+        dark = ctk.get_appearance_mode().lower() == "dark"
+        ctk.set_appearance_mode("Light" if dark else "Dark")
+        self.theme_button.configure(text="Tamna tema" if dark else "Svijetla tema")
+
 if __name__ == "__main__":
+    splash = StartupSplash()
+    splash.mainloop()
     app = IptvExtractorApp()
     app.mainloop()
